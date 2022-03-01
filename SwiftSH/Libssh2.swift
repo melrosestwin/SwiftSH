@@ -508,12 +508,13 @@ extension Libssh2 {
             }
 
             var data = Data()
+            var tryingCount = 0
 
             var returnCode: Int
             repeat {
                 returnCode = libssh2_channel_read_ex(channel, streamID, buffer, bufferSize)
 
-                guard returnCode >= 0 || returnCode == Int(LIBSSH2_ERROR_EAGAIN) else {
+                guard returnCode >= 0 || returnCode == Int(LIBSSH2_ERROR_EAGAIN), tryingCount < 1000 else {
                     throw returnCode.error
                 }
 
@@ -522,6 +523,7 @@ extension Libssh2 {
                         data.append(UnsafePointer($0), count: returnCode)
                     }
                 }
+                tryingCount += 1
             } while returnCode > 0 || (returnCode == 0 && libssh2_channel_eof(channel) == 0)
 
             return data
